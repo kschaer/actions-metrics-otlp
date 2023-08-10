@@ -1,3 +1,5 @@
+import * as core from '@actions/core'
+
 import { ExporterOptions, MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter'
 import { Resource } from '@opentelemetry/resources'
 import {
@@ -7,11 +9,13 @@ import {
   ConsoleMetricExporter,
 } from '@opentelemetry/sdk-metrics'
 import { ActionInputs } from '../types'
+import { ActionsConsoleMetricExporter } from './actionsExporter'
 
 // only support GCP exporter for now
 export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
   if (inputs.useConsoleExporter || !inputs.gcpProjectId) {
-    return new ConsoleMetricExporter()
+    core.info('Using Console exporter')
+    return new ActionsConsoleMetricExporter()
   }
 
   const { gcpProjectId } = inputs
@@ -24,6 +28,7 @@ export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
 }
 
 export const setupOtel = (inputs: ActionInputs) => {
+  core.info('Setting up telemetry...')
   const resource = new Resource({
     'service.name': 'example-metric-service',
     'service.namespace': 'samples',

@@ -19,10 +19,12 @@ export const run = async (context: GitHubContext, inputs: ActionInputs): Promise
 
   const meterProvider = setupOtel(inputs)
 
+  core.info('Handling event')
   await handleEvent(meterProvider, context, inputs)
   // const rateLimit = await getRateLimitMetrics(context, inputs)
   // await submitMetrics(rateLimit, 'rate limit')
 
+  core.info('Shutting down telemetry')
   await meterProvider.shutdown()
 }
 
