@@ -1,5 +1,9 @@
 import * as github from '@actions/github'
+import * as core from '@actions/core'
+
 import { v1 } from '@datadog/datadog-api-client'
+import mockConsole from 'jest-mock-console'
+
 import { run } from '../src/run'
 import { exampleWorkflowRunCompletedEvent } from './fixtures'
 import { exampleRateLimitResponse } from './rateLimit/fixtures'
@@ -8,8 +12,9 @@ import { examplePullRequestClosedEvent } from './fixtures'
 import { WebhookPayload } from '@actions/github/lib/interfaces'
 import { examplePullRequestOpenedEvent } from './fixtures'
 import { exampleClosedPullRequestQuery } from './pullRequest/fixtures/closedPullRequest'
+import { ActionsConsoleMetricExporter } from '../src/otel/actionsExporter'
 
-jest.mock('@actions/core')
+// jest.mock('@actions/core')
 
 jest.mock('@actions/github')
 const octokitMock = {
@@ -23,41 +28,44 @@ const octokitMock = {
 const getOctokit = github.getOctokit as jest.Mock
 getOctokit.mockReturnValue(octokitMock)
 
-jest.mock('@datadog/datadog-api-client')
-const submitMetrics = jest.spyOn(v1.MetricsApi.prototype, 'submitMetrics')
-
-test('empty', () => {
-  expect(0).toBe(0)
+beforeAll(() => {
+  // this ensures timestamps in snapshots remain static
+  jest.useFakeTimers({ now: new Date(Date.UTC(2023, 7, 11)) })
 })
 
-// test('workflow_run with collectJobMetrics', async () => {
-//   octokitMock.graphql.mockResolvedValue(exampleCompletedCheckSuite)
-//   octokitMock.rest.rateLimit.get.mockResolvedValue(exampleRateLimitResponse)
-//   submitMetrics.mockResolvedValue({ status: 'ok' })
+afterAll(() => {
+  jest.restoreAllMocks()
+  jest.useRealTimers()
+})
 
-//   await run(
-//     {
-//       eventName: 'workflow_run',
-//       payload: exampleWorkflowRunCompletedEvent,
-//       repo: { owner: 'Codertocat', repo: 'Hello-World' },
-//     },
-//     {
-//       githubToken: 'GITHUB_TOKEN',
-//       githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
-//       collectJobMetrics: true,
-//       collectStepMetrics: true,
-//       sendPullRequestLabels: false,
-//     }
-//   )
-//   expect(getOctokit).toHaveBeenCalledWith('GITHUB_TOKEN')
-//   expect(submitMetrics).toHaveBeenCalledTimes(4)
-//   expect(submitMetrics.mock.calls).toMatchSnapshot()
-// })
+test('workflow_run with collectJobMetrics', async () => {
+  octokitMock.graphql.mockResolvedValue(exampleCompletedCheckSuite)
+  octokitMock.rest.rateLimit.get.mockResolvedValue(exampleRateLimitResponse)
+
+  const exporterSpy = jest.spyOn(ActionsConsoleMetricExporter.prototype, 'export')
+
+  await run(
+    {
+      eventName: 'workflow_run',
+      payload: exampleWorkflowRunCompletedEvent,
+      repo: { owner: 'Codertocat', repo: 'Hello-World' },
+    },
+    {
+      githubToken: 'GITHUB_TOKEN',
+      githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
+      collectJobMetrics: true,
+      collectStepMetrics: true,
+      sendPullRequestLabels: false,
+      useConsoleExporter: true,
+    }
+  )
+  expect(getOctokit).toHaveBeenCalledWith('GITHUB_TOKEN')
+  expect(exporterSpy.mock.calls).toMatchSnapshot()
+})
 
 test('workflow_run', async () => {
-  octokitMock.rest.rateLimit.get.mockResolvedValue(exampleRateLimitResponse)
-  // submitMetrics.mockResolvedValue({ status: 'ok' })
-  console.log('********')
+  const exporterSpy = jest.spyOn(ActionsConsoleMetricExporter.prototype, 'export')
+
   await run(
     {
       eventName: 'workflow_run',
@@ -74,10 +82,7 @@ test('workflow_run', async () => {
     }
   )
 
-  expect(0).toBe(0)
-  // expect(getOctokit).toHaveBeenCalledWith('GITHUB_TOKEN')
-  // expect(submitMetrics).toHaveBeenCalledTimes(2)
-  // expect(submitMetrics.mock.calls).toMatchSnapshot()
+  expect(exporterSpy.mock.calls).toMatchSnapshot()
 })
 
 // test('pull_request_opened', async () => {
