@@ -30,7 +30,7 @@ getOctokit.mockReturnValue(octokitMock)
 
 beforeAll(() => {
   // this ensures timestamps in snapshots remain static
-  jest.useFakeTimers({ now: new Date('2023-08-11T00:00:00') })
+  jest.useFakeTimers({ now: new Date(Date.UTC(2023, 7, 11)) })
 })
 
 afterAll(() => {

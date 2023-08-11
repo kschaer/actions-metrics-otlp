@@ -45,11 +45,11 @@ exports[`workflow_run 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": 1,
@@ -84,11 +84,11 @@ exports[`workflow_run 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": {
@@ -203,11 +203,11 @@ exports[`workflow_run with collectJobMetrics 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": 1,
@@ -242,11 +242,11 @@ exports[`workflow_run with collectJobMetrics 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": {
@@ -327,11 +327,11 @@ exports[`workflow_run with collectJobMetrics 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": 1,
@@ -371,11 +371,11 @@ exports[`workflow_run with collectJobMetrics 1`] = `
                     "workflow_run.run_attempt": 1,
                   },
                   "endTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "startTime": [
-                    1691726400,
+                    1691712000,
                     0,
                   ],
                   "value": {
