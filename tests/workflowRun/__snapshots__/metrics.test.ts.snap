@@ -7,15 +7,15 @@ exports[`computeJobMetrics 1`] = `
       "resource": Resource {
         "_asyncAttributesPromise": undefined,
         "_attributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
         },
         "_syncAttributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
@@ -175,15 +175,15 @@ exports[`computeStepMetrics 1`] = `
       "resource": Resource {
         "_asyncAttributesPromise": undefined,
         "_attributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
         },
         "_syncAttributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
@@ -1341,15 +1341,15 @@ exports[`computeWorkflowRunMetrics 1`] = `
       "resource": Resource {
         "_asyncAttributesPromise": undefined,
         "_attributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
         },
         "_syncAttributes": {
-          "service.name": "example-metric-service",
-          "service.namespace": "samples",
+          "service.name": "collect-metrics",
+          "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",

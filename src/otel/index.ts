@@ -1,30 +1,40 @@
 import * as core from '@actions/core'
 
-import { ExporterOptions, MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter'
+import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter'
 import { Resource } from '@opentelemetry/resources'
-import {
-  MeterProvider,
-  PeriodicExportingMetricReader,
-  PushMetricExporter,
-  ConsoleMetricExporter,
-} from '@opentelemetry/sdk-metrics'
+import { MeterProvider, PeriodicExportingMetricReader, PushMetricExporter } from '@opentelemetry/sdk-metrics'
 import { ActionInputs } from '../types'
 import { ActionsConsoleMetricExporter } from './actionsExporter'
 
-// only support GCP exporter for now
-export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
-  if (inputs.useConsoleExporter || !inputs.gcpProjectId) {
-    core.info('Using Console exporter')
-    return new ActionsConsoleMetricExporter()
+const createGcpExporter = (inputs: ActionInputs): PushMetricExporter => {
+  // Authenticate - this comes from google-github-actions/auth
+  const keyFile = process.env.GOOGLE_GHA_CREDS_PATH
+  if (keyFile) {
+    core.info('Successfully authenticated')
+
+    return new MetricExporter({
+      projectId: inputs.gcpProjectId,
+      keyFile,
+    })
+  } else {
+    core.warning('No gcp credfile found, authenticate with `google-github-actions/auth`.')
   }
 
-  const { gcpProjectId } = inputs
-  if (!gcpProjectId) {
-    throw new Error('Missing GCP Project ID')
+  return new MetricExporter({})
+}
+
+// only support GCP and ActionsConsole exporter for now
+export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
+  switch (inputs.exporter) {
+    case 'gcp':
+      return createGcpExporter(inputs)
+    case 'console':
+      return new ActionsConsoleMetricExporter()
+    default: {
+      core.warning(`Unknown exporter ${inputs.exporter}. Falling back to ActionsConsole exporter`)
+      return new ActionsConsoleMetricExporter()
+    }
   }
-  return new MetricExporter({
-    projectId: gcpProjectId,
-  })
 }
 
 export const setupOtel = (inputs: ActionInputs) => {
@@ -32,15 +42,10 @@ export const setupOtel = (inputs: ActionInputs) => {
   console.log('Setting up telemetry...')
 
   const resource = new Resource({
-    'service.name': 'example-metric-service',
-    'service.namespace': 'samples',
+    'service.namespace': 'github-actions',
+    'service.name': 'collect-metrics',
   })
   const meterProvider = new MeterProvider({
-    // Create a resource. Fill the `service.*` attributes in with real values for your service.
-    // GcpDetectorSync will add in resource information about the current environment if you are
-    // running on GCP. These resource attributes will be translated to a specific GCP monitored
-    // resource if running on GCP. Otherwise, metrics will be sent with monitored resource
-    // `generic_task`.
     resource,
   })
 
@@ -52,17 +57,6 @@ export const setupOtel = (inputs: ActionInputs) => {
     // Cloud Monitoring.
     exportIntervalMillis: 10_000,
   })
-
-  //   meterProvider.addMetricReader(new MetricReader())
-  // Register the exporter
-  //   meterProvider.addMetricReader(
-  //     new PeriodicExportingMetricReader({
-  //       // Export metrics every 10 seconds. 5 seconds is the smallest sample period allowed by
-  //       // Cloud Monitoring.
-  //       exportIntervalMillis: 10_000,
-  //       exporter: new MetricExporter(),
-  //     })
-  //   )
 
   meterProvider.addMetricReader(reader)
   return meterProvider

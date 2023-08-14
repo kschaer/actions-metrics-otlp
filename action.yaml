@@ -19,19 +19,14 @@ inputs:
     description: Collect step metrics
     required: false
     default: 'false'
-  send-pull-request-labels:
-    description: Send pull request labels as Datadog tags
-    required: false
-    default: 'false'
+
+  exporter:
+    description: the OTEL exporter to use. supported values - gcp, console
+    required: true
 
   gcp-project-id:
-    description: GCP Project ID
+    description: Explicitly set GCP Project ID, for use with "gcp" exporter. Otherwise, project will be inferred.
     required: false
-    default: ''
-  use-console-exporter:
-    description: Override exporter and export only to ocnsole
-    required: false
-    default: 'false'
 
 runs:
   using: 'node16'
