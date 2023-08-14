@@ -11,20 +11,35 @@ import {
 import { ActionInputs } from '../types'
 import { ActionsConsoleMetricExporter } from './actionsExporter'
 
-// only support GCP exporter for now
-export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
-  if (inputs.useConsoleExporter || !inputs.gcpProjectId) {
-    core.info('Using Console exporter')
-    return new ActionsConsoleMetricExporter()
+const createGcpExporter = (inputs: ActionInputs): PushMetricExporter => {
+  // Authenticate - this comes from google-github-actions/auth
+  const keyFile = process.env.GOOGLE_GHA_CREDS_PATH
+  if (keyFile) {
+    core.info('Successfully authenticated')
+
+    return new MetricExporter({
+      projectId: inputs.gcpProjectId,
+      keyFile,
+    })
+  } else {
+    core.warning('No gcp credfile found, authenticate with `google-github-actions/auth`.')
   }
 
-  const { gcpProjectId } = inputs
-  if (!gcpProjectId) {
-    throw new Error('Missing GCP Project ID')
+  return new MetricExporter({})
+}
+
+// only support GCP and ActionsConsole exporter for now
+export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
+  switch (inputs.exporter) {
+    case 'gcp':
+      return createGcpExporter(inputs)
+    case 'console':
+      return new ActionsConsoleMetricExporter()
+    default: {
+      core.warning(`Unknown exporter ${inputs.exporter}. Falling back to ActionsConsole exporter`)
+      return new ActionsConsoleMetricExporter()
+    }
   }
-  return new MetricExporter({
-    projectId: gcpProjectId,
-  })
 }
 
 export const setupOtel = (inputs: ActionInputs) => {
@@ -32,8 +47,8 @@ export const setupOtel = (inputs: ActionInputs) => {
   console.log('Setting up telemetry...')
 
   const resource = new Resource({
-    'service.name': 'example-metric-service',
-    'service.namespace': 'samples',
+    'service.namespace': 'github-actions-metrics',
+    'service.name': 'github-actions-metrics',
   })
   const meterProvider = new MeterProvider({
     // Create a resource. Fill the `service.*` attributes in with real values for your service.

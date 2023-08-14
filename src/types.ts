@@ -13,12 +13,10 @@ export type RateLimitResponse = Endpoints['GET /rate_limit']['response']
 export type ActionInputs = {
   githubToken: string
   githubTokenForRateLimitMetrics: string
-  // datadogApiKey?: string
-  // datadogSite?: string
+
   collectJobMetrics: boolean
   collectStepMetrics: boolean
-  sendPullRequestLabels: boolean
 
   gcpProjectId?: string
-  useConsoleExporter?: boolean
+  exporter: string
 }

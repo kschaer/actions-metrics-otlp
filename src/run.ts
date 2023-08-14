@@ -1,6 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { PullRequestEvent, PushEvent, WorkflowRunEvent } from '@octokit/webhooks-types'
+import { MeterProvider } from '@opentelemetry/sdk-metrics'
+
 import { computePullRequestClosedMetrics, computePullRequestOpenedMetrics } from './pullRequest/metrics'
 import { computePushMetrics } from './push/metrics'
 import { queryCompletedCheckSuite } from './queries/completedCheckSuite'
@@ -11,12 +13,8 @@ import { computeWorkflowRunJobStepMetrics } from './workflowRun/metrics'
 import { computeScheduleMetrics } from './schedule/metrics'
 import { SubmitMetrics } from './client'
 import { setupOtel } from './otel'
-import { MeterProvider } from '@opentelemetry/sdk-metrics'
-import { Meter } from '@opentelemetry/api'
 
 export const run = async (context: GitHubContext, inputs: ActionInputs): Promise<void> => {
-  // const submitMetrics = createMetricsClient(inputs)
-
   const meterProvider = setupOtel(inputs)
 
   core.info('Handling event')
@@ -68,13 +66,6 @@ const handleWorkflowRun = async (meterProvider: MeterProvider, e: WorkflowRunEve
     const meter = meterProvider.getMeter('workflow-run')
     computeWorkflowRunJobStepMetrics(e, meter, checkSuite)
 
-    // await submitMetrics(metrics.workflowRunMetrics, 'workflow run')
-    // if (inputs.collectJobMetrics) {
-    //   await submitMetrics(metrics.jobMetrics, 'job')
-    // }
-    // if (inputs.collectStepMetrics) {
-    //   await submitMetrics(metrics.stepMetrics, 'step')
-    // }
     return
   }
 
