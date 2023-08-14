@@ -55,8 +55,7 @@ test('workflow_run with collectJobMetrics', async () => {
       githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
       collectJobMetrics: true,
       collectStepMetrics: true,
-      sendPullRequestLabels: false,
-      useConsoleExporter: true,
+      exporter: 'console',
     }
   )
   expect(getOctokit).toHaveBeenCalledWith('GITHUB_TOKEN')
@@ -77,8 +76,7 @@ test('workflow_run', async () => {
       githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
       collectJobMetrics: false,
       collectStepMetrics: false,
-      sendPullRequestLabels: false,
-      useConsoleExporter: true,
+      exporter: 'console',
     }
   )
 

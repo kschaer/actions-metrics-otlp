@@ -96,7 +96,10 @@ const handlePullRequest = async (
     } catch (error) {
       core.warning(`Could not get the pull request: ${String(error)}`)
     }
-    return await submitMetrics(computePullRequestClosedMetrics(e, closedPullRequest, inputs), 'pull request')
+    return await submitMetrics(
+      computePullRequestClosedMetrics(e, closedPullRequest, { sendPullRequestLabels: true }),
+      'pull request'
+    )
   }
 
   core.warning(`Not supported action ${e.action}`)

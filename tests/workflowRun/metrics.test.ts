@@ -18,8 +18,7 @@ const setupTestMeter = (actionInputs: Partial<ActionInputs> = {}) => {
     githubTokenForRateLimitMetrics: 'STUBTOKEN',
     collectJobMetrics: false,
     collectStepMetrics: false,
-    sendPullRequestLabels: false,
-    useConsoleExporter: true,
+    exporter: 'console',
     ...actionInputs,
   })
   const meter = meterProvider.getMeter('test')
