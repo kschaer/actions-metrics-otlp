@@ -55,6 +55,7 @@ test('workflow_run with collectJobMetrics', async () => {
       githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
       collectJobMetrics: true,
       collectStepMetrics: true,
+      parseMatrixJobNames: false,
       exporter: 'console',
     }
   )
@@ -76,6 +77,7 @@ test('workflow_run', async () => {
       githubTokenForRateLimitMetrics: 'GITHUB_TOKEN',
       collectJobMetrics: false,
       collectStepMetrics: false,
+      parseMatrixJobNames: false,
       exporter: 'console',
     }
   )

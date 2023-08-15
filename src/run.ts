@@ -53,7 +53,7 @@ const handleWorkflowRun = async (meterProvider: MeterProvider, e: WorkflowRunEve
     }
 
     const meter = meterProvider.getMeter('workflow-run')
-    computeWorkflowRunJobStepMetrics(e, meter, checkSuite)
+    computeWorkflowRunJobStepMetrics(e, meter, inputs, checkSuite)
 
     return
   }

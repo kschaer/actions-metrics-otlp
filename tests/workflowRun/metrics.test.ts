@@ -18,6 +18,7 @@ const setupTestMeter = (actionInputs: Partial<ActionInputs> = {}) => {
     githubTokenForRateLimitMetrics: 'STUBTOKEN',
     collectJobMetrics: false,
     collectStepMetrics: false,
+    parseMatrixJobNames: false,
     exporter: 'console',
     ...actionInputs,
   })

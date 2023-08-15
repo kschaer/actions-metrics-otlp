@@ -21,11 +21,13 @@ export const parseWorkflowFile = (s: string): WorkflowDefinition => {
   return workflow
 }
 
+const getCanonicalJobName = (jobName: string) => jobName.replace(/ *\(.+?\)/, '')
+
 export const inferRunner = (jobName: string, workflowDefinition?: WorkflowDefinition): string | undefined => {
   if (workflowDefinition === undefined) {
     return
   }
-  const canonicalJobName = jobName.replace(/ *\(.+?\)/, '')
+  const canonicalJobName = getCanonicalJobName(jobName)
   for (const k of Object.keys(workflowDefinition.jobs)) {
     const job = workflowDefinition.jobs[k]
     // exact match
@@ -47,3 +49,22 @@ export const inferRunner = (jobName: string, workflowDefinition?: WorkflowDefini
 
 // https://github.com/tc39/proposal-regex-escaping
 const escapeRegex = (s: string): string => s.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&')
+
+export const parseJobName = (jobName: string) => {
+  // service-checks (snakes, example) / run-plan-alerts / plan-or-deploy-alerts-dev
+  // service-checks (greeter, example) / generate-validatex
+
+  const canonicalJobName = getCanonicalJobName(jobName)
+
+  const matchMatrixInputs = [...jobName.matchAll(/\(([^)]+)\)/g)]
+
+  const result = { 'job.canonical_name': canonicalJobName }
+
+  if (!matchMatrixInputs.length) {
+    return result
+  }
+
+  const matrixInput = matchMatrixInputs[0][1]
+
+  return { ...result, 'job.matrix': matrixInput }
+}

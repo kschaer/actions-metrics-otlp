@@ -9,6 +9,7 @@ const main = async (): Promise<void> => {
 
     collectJobMetrics: core.getBooleanInput('collect-job-metrics'),
     collectStepMetrics: core.getBooleanInput('collect-step-metrics'),
+    parseMatrixJobNames: core.getBooleanInput('parse-matrix-job-names'),
 
     gcpProjectId: core.getInput('gcp-project-id'),
     exporter: core.getInput('exporter'),
