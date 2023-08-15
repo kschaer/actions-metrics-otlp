@@ -1,5 +1,4 @@
 import * as core from '@actions/core'
-import util from 'util'
 import { ExportResult, ExportResultCode } from '@opentelemetry/core'
 import {
   AggregationTemporality,
@@ -53,13 +52,6 @@ export class ActionsConsoleMetricExporter implements PushMetricExporter {
 
     for (const scopeMetrics of metrics.scopeMetrics) {
       for (const metric of scopeMetrics.metrics) {
-        // core.info(
-        //   util.inspect({
-        //     descriptor: metric.descriptor,
-        //     dataPointType: metric.dataPointType,
-        //     dataPoints: metric.dataPoints,
-        //   })
-        // )
         core.info(JSON.stringify(metric, null, 2))
       }
     }
