@@ -1,27 +1,10 @@
 import * as core from '@actions/core'
 
-import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter'
 import { Resource } from '@opentelemetry/resources'
 import { MeterProvider, PeriodicExportingMetricReader, PushMetricExporter } from '@opentelemetry/sdk-metrics'
 import { ActionInputs } from '../types'
 import { ActionsConsoleMetricExporter } from './actionsExporter'
-
-const createGcpExporter = (inputs: ActionInputs): PushMetricExporter => {
-  // Authenticate - this comes from google-github-actions/auth
-  const keyFile = process.env.GOOGLE_GHA_CREDS_PATH
-  if (keyFile) {
-    core.info('Successfully authenticated')
-
-    return new MetricExporter({
-      projectId: inputs.gcpProjectId,
-      keyFile,
-    })
-  } else {
-    core.warning('No gcp credfile found, authenticate with `google-github-actions/auth`.')
-  }
-
-  return new MetricExporter({})
-}
+import { createGcpExporter } from './gcpExporter'
 
 // only support GCP and ActionsConsole exporter for now
 export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
@@ -39,7 +22,6 @@ export const createExporter = (inputs: ActionInputs): PushMetricExporter => {
 
 export const setupOtel = (inputs: ActionInputs) => {
   core.info('Setting up telemetry...')
-  console.log('Setting up telemetry...')
 
   const resource = new Resource({
     'service.namespace': 'github-actions',

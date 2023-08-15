@@ -17,10 +17,7 @@ import { setupOtel } from './otel'
 export const run = async (context: GitHubContext, inputs: ActionInputs): Promise<void> => {
   const meterProvider = setupOtel(inputs)
 
-  core.info('Handling event')
   await handleEvent(meterProvider, context, inputs)
-  // const rateLimit = await getRateLimitMetrics(context, inputs)
-  // await submitMetrics(rateLimit, 'rate limit')
 
   core.info('Shutting down telemetry')
   await meterProvider.forceFlush()
@@ -29,18 +26,10 @@ export const run = async (context: GitHubContext, inputs: ActionInputs): Promise
 
 const handleEvent = async (meterProvider: MeterProvider, context: GitHubContext, inputs: ActionInputs) => {
   if (context.eventName === 'workflow_run') {
-    return await handleWorkflowRun(meterProvider, context.payload as WorkflowRunEvent, inputs)
+    return handleWorkflowRun(meterProvider, context.payload as WorkflowRunEvent, inputs)
   }
-  // if (context.eventName === 'pull_request') {
-  //   return await handlePullRequest(submitMetrics, context.payload as PullRequestEvent, context, inputs)
-  // }
-  // if (context.eventName === 'push') {
-  //   return handlePush(submitMetrics, context.payload as PushEvent)
-  // }
-  // if (context.eventName === 'schedule') {
-  //   return handleSchedule(submitMetrics, context, inputs)
-  // }
-  core.warning(`Not supported event ${context.eventName}`)
+
+  core.warning(`Event not supported: ${context.eventName}`)
 }
 
 const handleWorkflowRun = async (meterProvider: MeterProvider, e: WorkflowRunEvent, inputs: ActionInputs) => {

@@ -1,24 +1,9 @@
 import * as core from '@actions/core'
-import { v1 } from '@datadog/datadog-api-client'
 import { WorkflowRunCompletedEvent } from '@octokit/webhooks-types'
 import { Attributes, Meter } from '@opentelemetry/api'
 
 import { inferRunner, parseWorkflowFile, WorkflowDefinition } from './parse'
 import { CompletedCheckSuite } from '../queries/completedCheckSuite'
-
-const computeCommonTags = (e: WorkflowRunCompletedEvent): string[] => [
-  `repository_owner:${e.workflow_run.repository.owner.login}`,
-  `repository_name:${e.workflow_run.repository.name}`,
-  `workflow_id:${e.workflow_run.id}`,
-  `workflow_name:${e.workflow_run.name}`,
-  `run_attempt:${e.workflow_run.run_attempt}`,
-  `event:${e.workflow_run.event}`,
-  `sender:${e.sender.login}`,
-  `sender_type:${e.sender.type}`,
-  `branch:${e.workflow_run.head_branch}`,
-  `default_branch:${(e.workflow_run.head_branch === e.repository.default_branch).toString()}`,
-  ...e.workflow_run.pull_requests.map((pull) => `pull_request_number:${pull.number}`),
-]
 
 const getCommonAttributes = (e: WorkflowRunCompletedEvent): Attributes => ({
   'repository.owner': e.workflow_run.repository.owner.login,
@@ -60,7 +45,7 @@ export const computeWorkflowRunJobStepMetrics = (
   return {
     workflowRunMetrics: computeWorkflowRunMetrics(e, meter, checkSuite),
     jobMetrics: computeJobMetrics(e, meter, checkSuite, workflowDefinition),
-    // stepMetrics: computeStepMetrics(e, checkSuite, workflowDefinition),
+    stepMetrics: computeStepMetrics(e, meter, checkSuite, workflowDefinition),
   }
 }
 
