@@ -100,7 +100,7 @@ const getJobAttributes = (
 ): Attributes => {
   const runsOn = inferRunner(checkRun.name, workflowDefinition)
 
-  const foo: Attributes = {
+  const jobAttributes: Attributes = {
     'job.name': checkRun.name,
 
     // lower case for backward compatibility
@@ -115,7 +115,7 @@ const getJobAttributes = (
     ...(checkRun.databaseId ? { 'job.id': checkRun.databaseId } : {}),
     ...(runsOn ? { 'job.runs_on': runsOn } : {}),
   }
-  return foo
+  return jobAttributes
 }
 
 export const computeJobMetrics = (
@@ -172,7 +172,7 @@ export const computeStepMetrics = (
   const baseAttributes = getCommonAttributes(e)
 
   for (const checkRun of checkSuite.node.checkRuns.nodes) {
-    const jobAttributes = getJobAttributes(checkRun, workflowDefinition)
+    const jobAttributes = getJobAttributes(checkRun, workflowDefinition, parseMatrixJobNames)
 
     for (const s of checkRun.steps.nodes) {
       const attributes = {
