@@ -1,4 +1,4 @@
-import { inferRunner, parseWorkflowFile, WorkflowDefinition } from '../../src/workflowRun/parse'
+import { inferRunner, parseJobName, parseWorkflowFile, WorkflowDefinition } from '../../src/workflowRun/parse'
 
 test('parseWorkflowFile', () => {
   const workflowDefinition = parseWorkflowFile(`
@@ -82,5 +82,41 @@ describe('inferRunner looks up name with expression', () => {
   test('not found', () => {
     const runner = inferRunner('baz', workflowDefinition)
     expect(runner).toBeUndefined()
+  })
+})
+
+describe('parseJobName', () => {
+  const testCases = [
+    {
+      input: 'normal-name',
+      expected: {
+        'job.canonical_name': 'normal-name',
+      },
+    },
+    {
+      input: 'normal-name / composite',
+      expected: {
+        'job.canonical_name': 'normal-name / composite',
+      },
+    },
+    {
+      input: 'matrix (foo, bar) / name',
+      expected: {
+        'job.canonical_name': 'matrix / name',
+        'job.matrix': 'foo, bar',
+      },
+    },
+    {
+      input: 'matrix (foo, bar) / name / composite',
+      expected: {
+        'job.canonical_name': 'matrix / name / composite',
+        'job.matrix': 'foo, bar',
+      },
+    },
+  ]
+
+  it.each(testCases)('parses job name $input', ({ input, expected }) => {
+    const result = parseJobName(input)
+    expect(result).toEqual(expected)
   })
 })

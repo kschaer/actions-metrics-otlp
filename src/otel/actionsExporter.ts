@@ -23,8 +23,6 @@ export class ActionsConsoleMetricExporter implements PushMetricExporter {
   }
 
   export(metrics: ResourceMetrics, resultCallback: (result: ExportResult) => void): void {
-    console.log('ActionsConsoleMetricExporter.export')
-
     if (this._shutdown) {
       // If the exporter is shutting down, by spec, we need to return FAILED as export result
       setImmediate(resultCallback, { code: ExportResultCode.FAILED })

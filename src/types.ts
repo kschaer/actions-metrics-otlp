@@ -16,6 +16,7 @@ export type ActionInputs = {
 
   collectJobMetrics: boolean
   collectStepMetrics: boolean
+  parseMatrixJobNames: boolean
 
   gcpProjectId?: string
   exporter: string

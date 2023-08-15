@@ -19,6 +19,10 @@ inputs:
     description: Collect step metrics
     required: false
     default: 'false'
+  parse-matrix-job-names:
+    description: Parse job names that may include matrix inputs. For use with collect-job-metrics/collect-step-metrics
+    required: false
+    default: 'false'
 
   exporter:
     description: the OTEL exporter to use. supported values - gcp, console

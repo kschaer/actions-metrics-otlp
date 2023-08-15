@@ -2,8 +2,9 @@ import * as core from '@actions/core'
 import { WorkflowRunCompletedEvent } from '@octokit/webhooks-types'
 import { Attributes, Meter } from '@opentelemetry/api'
 
-import { inferRunner, parseWorkflowFile, WorkflowDefinition } from './parse'
+import { inferRunner, parseJobName, parseWorkflowFile, WorkflowDefinition } from './parse'
 import { CompletedCheckSuite } from '../queries/completedCheckSuite'
+import { ActionInputs } from '../types'
 
 const getCommonAttributes = (e: WorkflowRunCompletedEvent): Attributes => ({
   'repository.owner': e.workflow_run.repository.owner.login,
@@ -26,6 +27,7 @@ const getCommonAttributes = (e: WorkflowRunCompletedEvent): Attributes => ({
 export const computeWorkflowRunJobStepMetrics = (
   e: WorkflowRunCompletedEvent,
   meter: Meter,
+  inputs: ActionInputs,
   checkSuite?: CompletedCheckSuite
 ) => {
   if (checkSuite === undefined) {
@@ -44,8 +46,8 @@ export const computeWorkflowRunJobStepMetrics = (
 
   return {
     workflowRunMetrics: computeWorkflowRunMetrics(e, meter, checkSuite),
-    jobMetrics: computeJobMetrics(e, meter, checkSuite, workflowDefinition),
-    stepMetrics: computeStepMetrics(e, meter, checkSuite, workflowDefinition),
+    jobMetrics: computeJobMetrics(e, meter, checkSuite, workflowDefinition, inputs.parseMatrixJobNames),
+    stepMetrics: computeStepMetrics(e, meter, checkSuite, workflowDefinition, inputs.parseMatrixJobNames),
   }
 }
 
@@ -93,7 +95,8 @@ type ArrayElement<T> = T extends Array<infer U> ? U : T
 
 const getJobAttributes = (
   checkRun: ArrayElement<CompletedCheckSuite['node']['checkRuns']['nodes']>,
-  workflowDefinition?: WorkflowDefinition
+  workflowDefinition?: WorkflowDefinition,
+  parseMatrixJobNames?: boolean
 ): Attributes => {
   const runsOn = inferRunner(checkRun.name, workflowDefinition)
 
@@ -103,6 +106,9 @@ const getJobAttributes = (
     // lower case for backward compatibility
     'job.conclusion': String(checkRun.conclusion).toLowerCase(),
     'job.status': String(checkRun.status).toLowerCase(),
+
+    // extract matrix inputs from job name if specified
+    ...(parseMatrixJobNames ? parseJobName(checkRun.name) : {}),
 
     // these fields may not be explicitly set,
     // so they may not be present
@@ -116,14 +122,15 @@ export const computeJobMetrics = (
   e: WorkflowRunCompletedEvent,
   meter: Meter,
   checkSuite: CompletedCheckSuite,
-  workflowDefinition?: WorkflowDefinition
+  workflowDefinition?: WorkflowDefinition,
+  parseMatrixJobNames?: boolean
 ) => {
   const baseAttributes = getCommonAttributes(e)
 
   for (const checkRun of checkSuite.node.checkRuns.nodes) {
     const attributes: Attributes = {
       ...baseAttributes,
-      ...getJobAttributes(checkRun, workflowDefinition),
+      ...getJobAttributes(checkRun, workflowDefinition, parseMatrixJobNames),
     }
 
     const runCount = meter.createCounter(`github.actions.job.total`)
@@ -159,7 +166,8 @@ export const computeStepMetrics = (
   e: WorkflowRunCompletedEvent,
   meter: Meter,
   checkSuite: CompletedCheckSuite,
-  workflowDefinition?: WorkflowDefinition
+  workflowDefinition?: WorkflowDefinition,
+  parseMatrixJobNames?: boolean
 ) => {
   const baseAttributes = getCommonAttributes(e)
 
