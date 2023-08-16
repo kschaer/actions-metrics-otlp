@@ -7,14 +7,14 @@ exports[`workflow_run 1`] = `
       "resource": Resource {
         "_asyncAttributesPromise": undefined,
         "_attributes": {
-          "service.name": "collect-metrics",
+          "service.name": "actions-metrics-otlp",
           "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
         },
         "_syncAttributes": {
-          "service.name": "collect-metrics",
+          "service.name": "actions-metrics-otlp",
           "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
@@ -165,14 +165,14 @@ exports[`workflow_run with collectJobMetrics 1`] = `
       "resource": Resource {
         "_asyncAttributesPromise": undefined,
         "_attributes": {
-          "service.name": "collect-metrics",
+          "service.name": "actions-metrics-otlp",
           "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",
           "telemetry.sdk.version": "1.15.0",
         },
         "_syncAttributes": {
-          "service.name": "collect-metrics",
+          "service.name": "actions-metrics-otlp",
           "service.namespace": "github-actions",
           "telemetry.sdk.language": "nodejs",
           "telemetry.sdk.name": "opentelemetry",

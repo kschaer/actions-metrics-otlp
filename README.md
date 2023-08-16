@@ -1,16 +1,40 @@
-# actions-metrics-otlp [![ts](https://github.com/int128/datadog-actions-metrics/actions/workflows/ts.yaml/badge.svg)](https://github.com/int128/datadog-actions-metrics/actions/workflows/ts.yaml) [![e2e](https://github.com/int128/datadog-actions-metrics/actions/workflows/e2e.yaml/badge.svg)](https://github.com/int128/datadog-actions-metrics/actions/workflows/e2e.yaml)
+# actions-metrics-otlp [![ts](https://github.com/kschaer/actions-metrics-otlp/actions/workflows/ts.yaml/badge.svg)](https://github.com/kschaer/actions-metrics-otlp/actions/workflows/ts.yaml)
 
-This is an action to send metrics of GitHub Actions to Datadog on an event.
-It is inspired from [yuya-takeyama/github-actions-metrics-to-datadog-action](https://github.com/yuya-takeyama/github-actions-metrics-to-datadog-action).
+This action captures metrics on GitHub Actions using [OpenTelemetry](https://opentelemetry.io/). It is designed to help provide greater observability into the usage and performance of GitHub Workflows.
 
+This project was originally forked from [int128/datadog-actions-metrics](https://github.com/int128/datadog-actions-metrics). 
 
-## Purpose
+## Overview
 
-### Improve the reliability and experience of CI/CD pipeline
+### How does it work?
 
-To collect the metrics when a workflow is completed:
+When this action is triggered by a supported [event](#supported-events), it creates the OTEL resources necessary to collect and export metrics to the destination of your choosing (see supported exporters [supported exporters](#supported-exporters)
+).
+Various metrics are then created based on the content of the event, as well as additional data obtained via the GitHub API (OctoKit). 
+Finally, the OTEL MeterProvider exports the metrics to the configured destination.
+
+### Supported events:
+
+- `workflow_run`
+
+It ignores all other events.
+
+The original repository supports additional events; these are not currently a priority for this fork (but contributions are welcome).
+
+### Supported exporters:
+- `gcp` - Google Cloud Platform
+- `console` - No export - logs directly to your workflow logs.
+- Contributions for additional exporters are welcome!
+## Usage
+
+To enable actions-metrics-otlp in your repository, add a new workflow to your repository wherever you typically store workflows - usually, this is the `.github/workflows` directory.
+### Example usage - GCP
+To collect workflow, job, and step metrics and ship to GCP:
+Note - see [google-github-actions/auth](https://github.com/google-github-actions/auth) for more information about authentication options. This example uses [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation).
 
 ```yaml
+name: Capture Workflow Metrics
+
 on:
   workflow_run:
     workflows:
@@ -19,390 +43,121 @@ on:
       - completed
 
 jobs:
-  send:
+  capture-workflow-metrics:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      # needed for GCP auth
+      contents: 'read'
+      id-token: 'write'
+
+      # needed for actions-metrics-otlp
+      actions: 'read'
+      checks: 'read'
+      pull-requests: 'read'
     steps:
-      - uses: int128/datadog-actions-metrics@v1
+      - uses: 'actions/checkout@v3'
+      - id: gcp-auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
-          # create an API key in https://docs.datadoghq.com/account_management/api-app-keys/
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
-```
-
-Here is an example of screenshot in Datadog.
-
-![image](https://user-images.githubusercontent.com/321266/126857281-f0257fec-3079-4cff-98ab-07070e306391.png)
-
-For developer experience, you can analyze the following metrics:
-
-- Time to test an application
-- Time to deploy an application
-
-For reliability, you can monitor the following metrics:
-
-- Success rate of the main branch
-- Rate limit of built-in `GITHUB_TOKEN`
-
-
-### Improve the reliability and experience of self-hosted runners
-
-For the self-hosted runners, you can monitor the following metrics for reliability and experience:
-
-- Count of the [lost communication with the server](https://github.com/actions-runner-controller/actions-runner-controller/issues/466) errors
-- Queued time of job (time to pick a job by a runner)
-
-
-### Improve your team development process
-
-You can analyze your development activity such as number of merged pull requests.
-It helps the continuous process improvement of your team.
-
-To collect the metrics when a pull request is opened or closed:
-
-```yaml
-on:
-  pull_request:
-    types:
-      - opened
-      - closed
-
-jobs:
-  send:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: int128/datadog-actions-metrics@v1
+          workload_identity_provider: your/workflow/identity/pool/provider
+          service_account: your-service-account@email.address.com
+      - id: capture-workflow-metrics
+        name: Capture Workflow Metrics
+        uses: kschaer/actions-metrics-otlp@v1
         with:
-          # create an API key in https://docs.datadoghq.com/account_management/api-app-keys/
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
-```
-
-
-## Overview
-
-This action handles the following events:
-
-- workflow_run event
-- pull_request event
-- push event
-- schedule event
-
-It ignores other events.
-
-
-## Metrics for workflow_run event
-
-### Workflow run
-
-This action sends the following metrics.
-
-- `github.actions.workflow_run.total`
-- `github.actions.workflow_run.conclusion.{CONCLUSION}_total`
-  - e.g. `github.actions.workflow_run.conclusion.success_total`
-  - e.g. `github.actions.workflow_run.conclusion.failure_total`
-  - See [the official document](https://docs.github.com/en/rest/reference/checks#create-a-check-run) for the possible values of `CONCLUSION` field
-- `github.actions.workflow_run.duration_second`
-  - Time from a workflow is started until it is updated
-- `github.actions.workflow_run.queued_duration_second`
-  - Time from a workflow is started until the first job is started
-  - This metric is suitable for monitoring only if it is ensured the first job runs on a self-hosted runner
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `workflow_name`
-- `workflow_id`
-- `run_attempt`
-  - Attempt number of the run, 1 for first attempt and higher if the workflow was re-run
-- `event`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `branch`
-- `default_branch` = `true` or `false`
-- `pull_request_number`
-  - Pull request(s) which triggered the workflow
-- `conclusion`
-
-See also the actual metrics in the [E2E test](https://github.com/int128/datadog-actions-metrics/actions/workflows/e2e.yaml).
-
-
-### Job
-
-This action sends the following metrics if `collect-job-metrics` is enabled.
-
-- `github.actions.job.total`
-- `github.actions.job.conclusion.{CONCLUSION}_total`
-  - e.g. `github.actions.job.conclusion.success_total`
-  - e.g. `github.actions.job.conclusion.failure_total`
-- `github.actions.job.duration_second`
-  - Time from a job is started to completed
-- `github.actions.job.lost_communication_with_server_error_total`
-  - Count of "lost communication with the server" errors of self-hosted runners.
-    See the issue [#444](https://github.com/int128/datadog-actions-metrics/issues/444) for details
-- `github.actions.job.received_shutdown_signal_error_total`
-  - Count of "The runner has received a shutdown signal" errors of self-hosted runners.
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `workflow_name`
-- `workflow_id`
-- `event`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `branch`
-- `default_branch` = `true` or `false`
-- `pull_request_number`
-  - Pull request(s) which triggered the workflow
-- `job_name`
-- `job_id`
-- `conclusion`
-- `status`
-- `runs_on`
-  - Runner label inferred from the workflow file if available
-  - e.g. `ubuntu-latest`
-
-
-### Step
-
-This action sends the following metrics if `collect-step-metrics` is enabled.
-
-- `github.actions.step.total`
-- `github.actions.step.conclusion.{CONCLUSION}_total`
-  - e.g. `github.actions.step.conclusion.success_total`
-  - e.g. `github.actions.step.conclusion.failure_total`
-- `github.actions.step.duration_second`
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `workflow_name`
-- `workflow_id`
-- `event`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `branch`
-- `default_branch` = `true` or `false`
-- `pull_request_number`
-  - Pull request(s) which triggered the workflow
-- `job_name`
-- `job_id`
-- `step_name`
-- `step_number` = 1, 2, ...
-- `conclusion`
-- `status`
-- `runs_on`
-  - Runner label inferred from the workflow file if available
-  - e.g. `ubuntu-latest`
-
-
-### Enable job or step metrics
-
-To send the metrics of jobs and steps:
-
-```yaml
-    steps:
-      - uses: int128/datadog-actions-metrics@v1
-        with:
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
           collect-job-metrics: true
           collect-step-metrics: true
+          parse-matrix-job-names: true
+          exporter: 'gcp'
 ```
 
-To send the metrics of jobs and steps on the default branch only:
+### Basic example usage - console
+If you are not ready to export metrics externally, you can try out this action with the `console` exporter. Metrics will be `JSON.stringify`'d and printed to the workflow logs.
+
+In this example, only workflow metrics are collected, so no additional permissions are specified.
 
 ```yaml
+name: Capture Workflow Metrics
+
+on:
+  workflow_run:
+    workflows:
+      - '**'
+    types:
+      - completed
+
+jobs:
+  capture-workflow-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: int128/datadog-actions-metrics@v1
+      - id: capture-workflow-metrics
+        name: Capture Workflow Metrics
+        uses: kschaer/actions-metrics-otlp@v1
         with:
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
-          collect-job-metrics: ${{ github.event.workflow_run.head_branch == github.event.repository.default_branch }}
-          collect-step-metrics: ${{ github.event.workflow_run.head_branch == github.event.repository.default_branch }}
+          exporter: 'console'
+
 ```
 
-This action calls GitHub GraphQL API to get jobs and steps of the current workflow run.
-Note that it may cause the rate exceeding error if too many workflows are run.
+### All Options
 
-If the job or step metrics is enabled, this action requires the following permissions:
+| Option                   | Type    | Required? | Description                                                                                                                                       |
+|--------------------------|---------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `exporter`               | string  | Y         | The exporter used to ship your metrics. Supported values: "console", "gcp"                                                                        |
+| `gcp-project-id`         | string  | N         | For use with "gcp" exporter. If not provided, the project ID is inferred from the credentials.                                                    |
+| `collect-job-metrics`    | boolean | N         | Collects additional metrics on the individual jobs within your workflow.                                                                          |
+| `collect-step-metrics`   | boolean | N         | Requires `collect-job-metrics`.  Collects additional metrics on the individual steps within your jobs.                                            |
+| `parse-matrix-job-names` | boolean | N         | Requires `collect-job-metrics`. Useful if you have matrix-driven jobs. If true, your job names will be parsed and the "canonical" name extracted. |
 
-```yaml
-    permissions:
-      actions: read
-      checks: read
-      contents: read
-```
-
-
-## Metrics for pull_request event
-
-### Pull request (opened)
-
-This action sends the following metrics on `opened` type.
-
-- `github.actions.pull_request_opened.total`
-- `github.actions.pull_request_opened.commits`
-- `github.actions.pull_request_opened.changed_files`
-- `github.actions.pull_request_opened.additions`
-- `github.actions.pull_request_opened.deletions`
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `user`
-- `pull_request_number`
-- `draft` = `true` or `false`
-- `base_ref`
-- `head_ref`
-
-### Pull request (closed)
-
-This action sends the following metrics on `closed` type.
-
-- `github.actions.pull_request_closed.total`
-- `github.actions.pull_request_closed.since_opened_seconds`
-  - Time from a pull request is opened to closed
-- `github.actions.pull_request_closed.since_first_authored_seconds`
-  - Time from the authored time of the first commit until closed
-- `github.actions.pull_request_closed.since_first_committed_seconds`
-  - Time from the committed time of the first commit until closed
-- `github.actions.pull_request_closed.commits`
-- `github.actions.pull_request_closed.changed_files`
-- `github.actions.pull_request_closed.additions`
-- `github.actions.pull_request_closed.deletions`
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `user`
-- `pull_request_number`
-- `draft` = `true` or `false`
-- `base_ref`
-- `head_ref`
-- `merged` = `true` or `false`
-- `requested_team`
-  - Team(s) of requested reviewer(s)
-- `label`
-  - Label(s) of a pull request
-  - Available if `send-pull-request-labels` is set
-
-### Permissions
-
-For pull_request event, this action requires the following permissions:
-
-```yaml
-    permissions:
-      pull-requests: read
-```
-
-
-## Metrics for push event
-
-This action sends the following metrics.
-
-- `github.actions.push.total`
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `sender`
-- `sender_type` = either `Bot`, `User` or `Organization`
-- `ref`
-- `created` = `true` or `false`
-- `deleted` = `true` or `false`
-- `forced` = `true` or `false`
-- `default_branch` = `true` or `false`
-
-
-## Metrics for schedule event
-
+# Metrics Collected
 ### Workflow run
 
-This action sends the following metrics:
+This action sends the following metrics on workflow runs.
 
-- `github.actions.schedule.queued_workflow_run.total` (gauge)
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-
-It is useful for monitoring self-hosted runners.
-
-### Permissions
-
-For schedule event, this action requires the following permissions:
-
-```yaml
-    permissions:
-      actions: read
-```
+Note that `job` and `step` metrics are enabled via their respective options.
 
 
-## Metrics for all supported events
-
-### Rate limit
-
-This action always sends the following metrics of [the built-in `GITHUB_TOKEN` rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting).
-
-- `github.actions.api_rate_limit.remaining`
-- `github.actions.api_rate_limit.limit`
-
-It has the following tags:
-
-- `repository_owner`
-- `repository_name`
-- `resource` = `core`, `search` and `graphql`
-
-This does not affect the rate limit of GitHub API because it just calls [`/rate_limit` endpoint](https://docs.github.com/en/rest/reference/rate-limit).
+| Name                                          | Type      | Unit    | Requires option?       |
+|-----------------------------------------------|-----------|---------|------------------------|
+| `github.actions.workflow_run.total`           | Counter   |         |                        |
+| `github.actions.workflow_run.duration`        | Histogram | Seconds |                        |
+| `github.actions.workflow_run.queued_duration` | Histogram | Seconds |                        |
+|                                               |           |         |                        |
+| `github.actions.job.total`                    | Counter   |         | `collect-job-metrics`  |
+| `github.actions.job.duration`                 | Histogram | Seconds | `collect-job-metrics`  |
+|                                               |           |         |                        |
+| `github.actions.step.total`                   | Counter   |         | `collect-step-metrics` |
+| `github.actions.step.duration`                | Histogram | Seconds | `collect-step-metrics` |
 
 
-## Specification
+Workflow run event metrics are collected with the following attributes: 
 
-You can set the following inputs:
-
-Name | Default | Description
------|---------|------------
-`github-token` | `github.token` | GitHub token to get jobs and steps if needed
-`github-token-rate-limit-metrics` | `github.token` | GitHub token for rate limit metrics
-`datadog-api-key` | - | Datadog API key. If not set, this action does not send metrics actually
-`datadog-site` | - | Datadog Server name such as `datadoghq.eu`, `ddog-gov.com`, `us3.datadoghq.com`
-`send-pull-request-labels` | `false` | Send pull request labels as Datadog tags
-`collect-job-metrics` | `false` | Collect job metrics
-`collect-step-metrics` | `false` | Collect step metrics
-
-### Proxy
-
-To connect to Datadog API via a HTTPS proxy, set `https_proxy` environment variable.
-For example,
-
-```yaml
-    steps:
-      - uses: int128/datadog-actions-metrics@v1
-        with:
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
-        env:
-          https_proxy: http://proxy.example.com:8080
-```
-
-### Breaking changes
-
-`collect-step-metrics` is explicitly required to send the step metrics.
-
-`collect-job-metrics-for-only-default-branch` is no longer supported.
-Use `collect-job-metrics` instead.
-
-
-## Contribution
-
-This is an open source software.
-Feel free to open issues and pull requests.
+| Attribute name           | Type                |                                        | Info                                                                                                                                                         |
+|--------------------------|---------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| repository.owner         | string              |                                        |                                                                                                                                                              |
+| repository.name          | string              |                                        |                                                                                                                                                              |
+| event.sender             | string              |                                        |                                                                                                                                                              |
+| event.sender_type        | string              |                                        |                                                                                                                                                              |
+| branch.name              | string              |                                        |                                                                                                                                                              |
+| branch.is_default        | boolean             |                                        |                                                                                                                                                              |
+|                          |                     |                                        |                                                                                                                                                              |
+| workflow_run.id          | number              |                                        |                                                                                                                                                              |
+| workflow_run.name        | string              |                                        |                                                                                                                                                              |
+| workflow_run.run_attempt | number              |                                        |                                                                                                                                                              |
+| workflow_run.event       | string              |                                        |                                                                                                                                                              |
+| workflow_run.conclusion  | string              |                                        | [WorkflowRunCompletedEvent["conclusion"]](https://github.com/octokit/webhooks/blob/ab83937fed1cbbecd7cabac2a2cdace8c7d36c86/payload-types/schema.d.ts#L8372) |
+| __...job metrics - all of the above plus:__ |
+| job.name                 | string              |                                        |                                                                                                                                                              |
+| job.conclusion           | string              |                                        | [CheckConclusionState](https://docs.github.com/en/graphql/reference/enums#checkconclusionstate)                                                              |
+| job.status               | string              |                                        | [CheckStatusState](https://docs.github.com/en/graphql/reference/enums#checkstatusstate)                                                                      |
+| job.runs_on              | string \| undefined |                                        |                                                                                                                                                              |
+| job.id                   | string              |                                        |                                                                                                                                                              |
+| job.canonical_name       | string              | with option: `parse-matrix-job-names`  |                                                                                                                                                              |
+| job.matrix               | string \| undefined | with option:  `parse-matrix-job-names` |                                                                                                                                                              |
+| __...step metrics - all of the above plus:__ |
+| step.name                | string              |                                        |                                                                                                                                                              |
+| step.number              | number              |                                        |                                                                                                                                                              |
+| step.conclusion          | string              |                                        | [CheckConclusionState](https://docs.github.com/en/graphql/reference/enums#checkconclusionstate)                                                              |
+| step.status              | string              |                                        | [CheckStatusState](https://docs.github.com/en/graphql/reference/enums#checkstatusstate)                                                                      |

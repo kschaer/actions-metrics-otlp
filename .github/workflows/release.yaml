@@ -27,4 +27,4 @@ jobs:
       - run: yarn package
       - uses: int128/release-typescript-action@035c6899d22569f5440029e3e744b951c01659e5 # v1.22.0
         with:
-          major-version: 0
+          major-version: 1
