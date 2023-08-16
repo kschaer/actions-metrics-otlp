@@ -25,7 +25,7 @@ export const setupOtel = (inputs: ActionInputs) => {
 
   const resource = new Resource({
     'service.namespace': 'github-actions',
-    'service.name': 'collect-metrics',
+    'service.name': 'actions-metrics-otlp',
   })
   const meterProvider = new MeterProvider({
     resource,
